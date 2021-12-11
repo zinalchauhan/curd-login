@@ -1,0 +1,23 @@
+<html>
+    <body>
+        <a href="/insertPage">Add Student</a>
+        <table border="5px">
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Pic</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+            <% data.forEach(function(item){ %>
+                <tr>
+                    <th><%= item.name%></th>
+                    <th><%= item.address%></th>
+                    <th><img src="http://localhost:5000/getImage/<%= item.pic%>" style="height: 100px; width: 100px;"></th>
+                    <th><a href="/display/<%= item._id%>">Update</a></th>
+                    <th><a href="/delete/<%= item._id%>">Delete</a></th>
+                </tr>
+            <% }) %>
+        </table>
+    </body>
+</html>
