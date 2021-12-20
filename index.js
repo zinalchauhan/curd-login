@@ -1,9 +1,21 @@
 const express = require('express')
 const index = express();
 
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const session = require("express-session");
 
-const fileupload = require('express-fileupload')
+const fileupload = require('express-fileupload');
+const { name } = require('ejs');
+
+index.use(
+    session({
+      secret: "anyseceretkey",
+      saveUninitialized: true,
+      cookie: { maxAge: 1000 * 60 * 60 * 24 },
+      resave: false,
+    })
+  );
+
 
 mongoose.connect("mongodb://localhost/temp",{useNewUrlParser:true,useUnifiedTopology:true},(err)=>console.log(err))
 
@@ -14,6 +26,7 @@ const userSchema = new mongoose.Schema({
     email:String,
     password:String
 })
+
 
 const UserModel = mongoose.model('students',userSchema)
 
@@ -30,24 +43,72 @@ index.get("/getImage/:image",(req,res)=>{
     return res.sendFile("./public/images/"+req.params.image, {root: "./"})
 })
 
+index.get('/loginpage',(req,res)=>{
+    res.render('login');
+})
+
+index.post("/login", (req, res) => {
+    const userName = req.body.name;
+    const password = req.body.password;
+    UserModel.findOne({name:name}).then(data => {
+        req.session.userName=name;
+        res.redirect("/");
+    }).catch(error => {
+        return res.status(201).json(error)
+    })
+})
+
+index.get("/logout", (req,res) => {
+    req.session.destroy((err) => {
+        if(err)
+        {
+           console.log(err);
+        }
+        else{
+            res.redirect("/loginpage");
+        }
+    })
+})
+
+
+
+
+
 index.get('/',(req,res)=>{
     
     // UserModel.find((err,data)=>{
     //     if(err) console.log(err);
     //     else return res.render('display',{data})
     // })
-
-    UserModel.find({}).then(data => {
-        return res.render('display',{data})
-        // return res.status(200).json(result)
-    }).catch(error => {
-        return res.status(201).json(error)
-    })
+    if(req.session.userName){
+        UserModel.find({}).then(data => {
+            return res.render('display',{data})
+            // return res.status(200).json(result)
+        }).catch(error => {
+            return res.status(201).json(error)
+        })
+    }
+    else
+    {
+        res.redirect("/loginpage");
+    }
+    
 })
 
 index.get('/insertPage',(req,res)=>{
-    res.render('insert');
+    if(req.session.userName)
+    {
+        res.render('insert');
+    }
+    else{
+        res.redirect("/loginpage");
+    }
+   
 })
+
+
+
+
 
 index.post('/insert',fileupload({
     useTempFiles:true,
@@ -85,7 +146,7 @@ index.post('/update/:id',fileupload({
     UserModel.updateOne({_id:req.params.id},{
         $set:{
             name:req.body.name,
-            address:req.body.address,
+            address:req.body.address, 
             pic:image
         }
     },(err,data)=>{
