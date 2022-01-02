@@ -1,6 +1,6 @@
 const express = require('express')
 const index = express();
-
+const bcrypt = require("bcryptjs");
 const mongoose = require('mongoose');
 const session = require("express-session");
 
@@ -47,16 +47,46 @@ index.get('/loginpage',(req,res)=>{
     res.render('login');
 })
 
-index.post("/login", (req, res) => {
-    const userName = req.body.name;
+index.post("/login", async (req,res) => {
+
+
+try {
+    const email = req.body.name;
     const password = req.body.password;
-    UserModel.findOne({name:name}).then(data => {
-        req.session.userName=name;
+
+    const user = await UserModel.findOne({name:email});
+    
+    if(user.password === password)
+    {
+        req.session.userName = user.name;
         res.redirect("/");
-    }).catch(error => {
-        return res.status(201).json(error)
-    })
-})
+        
+    }
+
+} catch (error) {
+    res.status(400).send("invalid");
+}
+
+    // const {email , password }= req.body;
+    
+    // const user = await UserModel.findOne({name:email});
+
+    // if(!user)
+    // {
+    //     return res.redirect("/loginpage");
+    // }
+    
+    // const isMatch = await bcrypt.compare(password, user.password);
+
+    // if(!isMatch){
+    //         return res.redirect("/loginpage");
+
+    // }
+
+    //     req.session.userName=req.body.name;
+    //     res.redirect("/");
+   
+});
 
 index.get("/logout", (req,res) => {
     req.session.destroy((err) => {
@@ -103,7 +133,7 @@ index.get('/insertPage',(req,res)=>{
     else{
         res.redirect("/loginpage");
     }
-   
+    
 })
 
 
@@ -113,8 +143,8 @@ index.get('/insertPage',(req,res)=>{
 index.post('/insert',fileupload({
     useTempFiles:true,
     tempFileDir:'/tmp/'
-}),(req,res)=>{
-
+}), async (req,res)=>{
+    
     req.files.image.mv('./public/images/'+req.files.image.name);
     var image = req.files.image.name
     const data = new UserModel({
